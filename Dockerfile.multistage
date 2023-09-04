@@ -1,0 +1,26 @@
+# Stage 1
+FROM node:20 AS base
+
+RUN mkdir -p /app
+WORKDIR /app
+COPY index.js /app/
+COPY package*.json /app/
+
+# prod deps install
+RUN npm install --omit=dev
+
+# Stage 2
+# Even lighter and more secure than node-alpine
+FROM gcr.io/distroless/nodejs20-debian11
+
+WORKDIR /app
+COPY --from=base /app/index.js /app
+COPY --from=base /app/node_modules /app/node_modules
+
+# use the unpriviledge user from distroless images
+USER nonroot
+
+ENV NODE_ENV="production"
+EXPOSE 3000
+
+CMD ["index.js"]
